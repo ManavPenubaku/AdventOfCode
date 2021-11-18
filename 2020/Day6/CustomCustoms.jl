@@ -39,7 +39,7 @@ print("Answer to Part 1 : ",sol1,"\n");
 
 #Part 2 : Find all unique questions that were answered by everyone in a group
 counts = countmap.(CustomsData);
-sol2 = 0
+sol2 = 0;
 for n in 1:length(GroupPersonCount)
     global sol2 += sum(values.(counts)[n] .== GroupPersonCount[n])
 end 
