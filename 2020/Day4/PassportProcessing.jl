@@ -51,8 +51,8 @@ function ExtractPassportData()
 end
 
 function FindValidPassportsPart1(PassportData)
-    valid_passports = (PassportData.byr .!= 0) .& (PassportData.iyr .!= 0) .& (PassportData.eyr .!= 0) .& (PassportData.hgt .!= "") .& (PassportData.hcl .!= "") .& (PassportData.ecl .!= "") .& (PassportData.pid .!= "");
-    # ValidPassportData = filter(row -> valid_passports, PassportData);
+    valid_passports = (PassportData.byr .!= 0) .& (PassportData.iyr .!= 0) .& (PassportData.eyr .!= 0) .& 
+        (PassportData.hgt .!= "") .& (PassportData.hcl .!= "") .& (PassportData.ecl .!= "") .& (PassportData.pid .!= "");
     return valid_passports
 end
 
