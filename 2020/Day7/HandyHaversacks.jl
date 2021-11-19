@@ -26,7 +26,7 @@ function MakeBagsList(lines)
                 bag_count = parse(Int,extract_bag_details.captures[1]);
                 temp_BagDict = merge(temp_BagDict , Dict(bag_id => bag_count));
             else
-                temp_BagDict = merge(temp_BagDict, Dict(bag_details => 0));
+                temp_BagDict = merge(temp_BagDict, Dict(bag_details => 1));
             end
         end
         ChildrenBagDict = [ChildrenBagDict;temp_BagDict];
@@ -52,9 +52,31 @@ function CountRelevantBags(ParentBagArray,ChildrenBagDict)
             end
         end
         index+=1;
-        print(index,"\n")
     end
-    return ContainsShinyGold;
+    return unique(ContainsShinyGold);
+end
+
+function FindTotalBags(ParentBagArray,ChildrenBagDict,BagName)
+    index = findall(x ->x==BagName,ParentBagArray);
+    bag_ids = collect(keys(ChildrenBagDict[index[1]]));
+    bag_counts = collect(values(ChildrenBagDict[index[1]]));
+    bag_value = 0;
+    temp_bag_count = 0;
+    for n in 1:length(bag_ids)
+        if (bag_ids[n] == "no other bags.")
+            bag_value = 1;
+            print(BagName," is worth ", bag_value ," bags\n");
+        else
+            temp_bag_count = FindTotalBags(ParentBagArray,ChildrenBagDict,bag_ids[n]);
+            if (temp_bag_count == 1)
+                bag_value = bag_value + bag_counts[n]*temp_bag_count;
+            else
+                bag_value = bag_value + bag_counts[n]*temp_bag_count + bag_counts[n];
+            end
+        end
+    end
+    print(BagName," is worth ", bag_value ," bags\n");
+    return bag_value;
 end
 
 file = open("PuzzleInput.txt");
@@ -63,3 +85,5 @@ lines = readlines(file);
 ParentBagArray, ChildrenBagDict = MakeBagsList(lines);
 
 CountRelevantBags(ParentBagArray,ChildrenBagDict);
+
+FindTotalBags(ParentBagArray,ChildrenBagDict,"shiny gold")
