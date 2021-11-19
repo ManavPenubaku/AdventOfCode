@@ -7,7 +7,9 @@ function MakeBagsList(lines)
     temp_BagDict = Dict("Placeholder" => 10);
     for i in 1:length(findbags)
         comma_regex = r"(.+), (.+)";
-        ParentBagArray = [ParentBagArray;findbags[i].captures[1]]
+        regex_bagcount = r"([0-9]) (.+) (bags||bag)(.+)"
+        temp_parent_bag = match.(r"(.+) (bags||bag)",findbags[i].captures[1]);
+        ParentBagArray = [ParentBagArray;temp_parent_bag.captures[1]]
         findbags[i].captures[1] = findbags[i].captures[2]
         line_end = findbags[i];
         while line_end !== nothing
@@ -16,9 +18,16 @@ function MakeBagsList(lines)
             if (line_end !== nothing)
                 bag_details = line_end.captures[2];
             else
-                bag_details = first_part;
+                bag_details = first_part; 
             end
-            temp_BagDict = merge(temp_BagDict , Dict(bag_details => 1))
+            extract_bag_details = match.(regex_bagcount,bag_details);
+            if extract_bag_details !== nothing
+                bag_id = extract_bag_details.captures[2];
+                bag_count = parse(Int,extract_bag_details.captures[1]);
+                temp_BagDict = merge(temp_BagDict , Dict(bag_id => bag_count));
+            else
+                temp_BagDict = merge(temp_BagDict, Dict(bag_details => 0));
+            end
         end
         ChildrenBagDict = [ChildrenBagDict;temp_BagDict];
         temp_BagDict = Dict("Placeholder" => 10);
@@ -27,7 +36,30 @@ function MakeBagsList(lines)
     return ParentBagArray, ChildrenBagDict;
 end
 
+function CountRelevantBags(ParentBagArray,ChildrenBagDict)
+    ContainsShinyGold = [];
+    for n in 1:length(ParentBagArray)
+        if (sum(contains.(keys.(ChildrenBagDict)[n],"shiny gold")) == 1)
+            ContainsShinyGold = [ContainsShinyGold; ParentBagArray[n]];
+        end
+    end
+    
+    index = 1;
+    while index <= length(ContainsShinyGold)
+        for n in 1:length(ParentBagArray)
+            if (sum(contains.(keys.(ChildrenBagDict)[n],ContainsShinyGold[index])) == 1)
+                ContainsShinyGold = [ContainsShinyGold; ParentBagArray[n]];
+            end
+        end
+        index+=1;
+        print(index,"\n")
+    end
+    return ContainsShinyGold;
+end
+
 file = open("PuzzleInput.txt");
 lines = readlines(file);
 
 ParentBagArray, ChildrenBagDict = MakeBagsList(lines);
+
+CountRelevantBags(ParentBagArray,ChildrenBagDict);
