@@ -49,6 +49,7 @@ end
 FaultyNumber = FindEncodingError(NumberList);
 println("Solution to Part 1 is : ",FaultyNumber);
 
+# Only use number list upto the faulty number
 NewNumberList = NumberList[1:findall(x->x==FaultyNumber,NumberList)[1].I[1]];
 
 CorrectSequenceSorted = FindContiguousSequence(NumberList,FaultyNumber);
