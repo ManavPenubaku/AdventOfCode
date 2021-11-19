@@ -53,7 +53,7 @@ function CountRelevantBags(ParentBagArray,ChildrenBagDict)
         end
         index+=1;
     end
-    return unique(ContainsShinyGold);
+    return size(unique(ContainsShinyGold))[1];
 end
 
 function FindTotalBags(ParentBagArray,ChildrenBagDict,BagName)
@@ -65,7 +65,6 @@ function FindTotalBags(ParentBagArray,ChildrenBagDict,BagName)
     for n in 1:length(bag_ids)
         if (bag_ids[n] == "no other bags.")
             bag_value = 1;
-            print(BagName," is worth ", bag_value ," bags\n");
         else
             temp_bag_count = FindTotalBags(ParentBagArray,ChildrenBagDict,bag_ids[n]);
             if (temp_bag_count == 1)
@@ -75,7 +74,6 @@ function FindTotalBags(ParentBagArray,ChildrenBagDict,BagName)
             end
         end
     end
-    print(BagName," is worth ", bag_value ," bags\n");
     return bag_value;
 end
 
@@ -84,6 +82,5 @@ lines = readlines(file);
 
 ParentBagArray, ChildrenBagDict = MakeBagsList(lines);
 
-CountRelevantBags(ParentBagArray,ChildrenBagDict);
-
-FindTotalBags(ParentBagArray,ChildrenBagDict,"shiny gold")
+print("Number of bags that contain shiny gold bags : ", CountRelevantBags(ParentBagArray,ChildrenBagDict),"\n");
+print("A shiny gold bag contains ", FindTotalBags(ParentBagArray,ChildrenBagDict,"shiny gold")," bags")
