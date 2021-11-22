@@ -1,5 +1,4 @@
 using DelimitedFiles
-using Combinatorics
 
 SatelliteMessages = readdlm("input.txt");
 
@@ -68,17 +67,64 @@ function MatchingRules(MessageList,VML)
     SelectedMessages = string.(MessageList[findall(x->x==ValidMessageLengths[1],length.(MessageList))]);
     ValidMessageCount = 0;
     for i in 1:length(SelectedMessages)
-        for j in 1:length(VML)
-            if SelectedMessages[i] == VML[j]
-                ValidMessageCount+=1;
-                break;
-            end
+        if (sum(SelectedMessages[i] .== VML)>0)
+            ValidMessageCount+=1;
         end
     end
     return ValidMessageCount;
 end
 
+function MatchingRules2(MessageList)
+    Rule42 = GenerateValidMessages(RuleList,42);
+    Rule31 = GenerateValidMessages(RuleList,31);
+
+    section_length = length(Rule31[1]);
+    ValidMessageCount = 0;
+    MessageList = MessageList[findall(x->x==0,mod.(length.(MessageList),section_length))];
+    
+    for n in 1:length(MessageList)
+        match_counter = 0;
+        Rule42Flag = 0;
+        match_31 = 0;
+        match_42 = 0;
+        sections = convert(Int,length(MessageList[n])/section_length);
+        index = sections - 1;
+        rangeinspect = (section_length*index+1):length(MessageList[n]);
+        if (sum(MessageList[n][rangeinspect] .== Rule31) > 0)
+            match_counter+=1;
+            match_31+=1;
+        end
+        while index >=4
+            rangeinspect = (section_length*(index-1)+1):section_length*index;
+            if (sum(MessageList[n][rangeinspect] .== Rule31) > 0 && Rule42Flag == 0)
+                match_counter+=1;         
+                match_31+=1;     
+            end
+            if (sum(MessageList[n][rangeinspect] .== Rule42) > 0)
+                match_counter+=1;
+                Rule42Flag = 1;
+                match_42+=1;
+            end
+            index -= 1;
+        end
+        while index >=1
+            rangeinspect = (section_length*(index-1)+1):section_length*index;
+            if (sum(MessageList[n][rangeinspect] .== Rule42) > 0)
+                match_counter+=1;
+            end
+            index -= 1;
+            match_42+=1;
+        end
+        if (match_counter == sections && match_42 > match_31)
+            ValidMessageCount+=1;
+        end
+    end
+    return ValidMessageCount
+end
+
 ValidMessageList = GenerateValidMessages(RuleList,0);
 
 Output = MatchingRules(MessageList,ValidMessageList);
-
+println("Solution for Part 1 is :",Output);
+Output2 = MatchingRules2(MessageList);
+println("Solution for Part 2 is :",Output2);
