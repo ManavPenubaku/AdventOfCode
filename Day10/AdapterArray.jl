@@ -10,19 +10,20 @@ println("Solution to Part 1 is : ",sol1)
 contiguous = [];
 series_count = 0;
 for n in 1:length(joltage_difference)
-    if(joltage_difference[n] == 3)
-        global series_count+=1;
+    if (joltage_difference[n] == 3)
         global contiguous = [contiguous;series_count]
         global series_count = 0;
     else
-        global series_count+=1;
+        global series_count += 1;
     end
 end
+println(contiguous)
+contiguous[contiguous.==4] .= 7;
+contiguous[contiguous.==3] .= 4;
+contiguous[contiguous.==2] .= 2;
+contiguous[contiguous.==1] .= 1;
+contiguous[contiguous.==0] .= 1;
+sol2 = prod(contiguous)
 
-contiguous[contiguous.==2] .= 1;
-contiguous[contiguous.==3] .= 2;
-contiguous[contiguous.==4] .= 4;
-contiguous[contiguous.==5] .= 7;
-prod(contiguous)
-
+println("Solution to Part 2 is : ",sol2)
 
