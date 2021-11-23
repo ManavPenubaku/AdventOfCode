@@ -88,10 +88,14 @@ function JoinJigsaw(TilePatterns,BitMask,JigsawCorners,JigsawEdges)
     JigsawSize = PieceCount * CharCount;
     CompletedJigsaw = Matrix{String}(undef,JigsawSize,JigsawSize);
     CompletedJigsaw = PlaceCorners(TilePatterns,BitMask,JigsawCorners,CompletedJigsaw,JigsawSize);
-    return CompletedJigsaw;
-    CornerNumber = 1;
-    for i in 1:PieceCount
-        for j in 1:PieceCount
+    CompletedJigsaw = PlaceEdges;
+
+    # Use these functions to find matching edge
+    map(x->x==ans,TileEdges[:,JigsawEdges])
+    join(CompletedJigsaw[111:120,111])
+    ######################################
+    for i in 2:PieceCount-1
+        for j in 2:PieceCount-1
             TempMatrix = TileToMatrix(TilePatterns[:,JigsawCorners[CornerNumber]]);
             UnmatchedEdges = findall(x->x==1,BitMask[:,CornerNumber]);
             if(UnmatchedEdges[1]==2 && UnmatchedEdges[2] == 3)
