@@ -14,7 +14,7 @@ function GetTilePatternsAndNumbers(TileData)
 end
 
 function GetIndividualTileEdges(TilePatterns)
-    TileEdges = Matrix{Any}(undef,8,144)
+    TileEdges = Matrix{Any}(undef,8,size(TilePatterns,2))
     for n in 1:size(TilePatterns,2)
         TileEdges[1,n] = TilePatterns[:,n][1];
         TileEdges[2,n] = join(map(x->x[1],TilePatterns[:,n]))
@@ -60,25 +60,6 @@ function TileToMatrix(Tile)
     return TileMatrix
 end
 
-function PlaceCorners(EmptyJigsaw,TilePatterns,BitMask,JigsawCorners,JigsawSize)
-    CornerBits = [1;1;0;0];
-    XIndices = [1:10,(JigsawSize-9) : JigsawSize,(JigsawSize-9) : JigsawSize,1:10];
-    YIndices = [1:10,1:10,(JigsawSize-9) : JigsawSize,(JigsawSize-9) : JigsawSize];
-    for n in 1:length(JigsawCorners)
-        TempMatrix = TileToMatrix(TilePatterns[:,JigsawCorners[n]]);
-        if (sum(circshift(BitMask[1:4,n],-2).==CornerBits) == 4);
-            TempMatrix = rot180(TempMatrix);
-        elseif (sum(circshift(BitMask[1:4,n],-1).==CornerBits) == 4)
-            TempMatrix = rotr90(TempMatrix);
-        elseif (sum(circshift(BitMask[1:4,n],1).==CornerBits) == 4)
-            TempMatrix = rotl90(TempMatrix);
-        end
-        CornerBits = circshift(CornerBits,1);
-        EmptyJigsaw[XIndices[n],YIndices[n]] = TempMatrix
-    end
-    return EmptyJigsaw;
-end
-
 function ReorientEdgeTile(TileFlexible,TileLeft)
     Count = 0;
     while true
@@ -94,32 +75,44 @@ function ReorientEdgeTile(TileFlexible,TileLeft)
     return TileFlexible;
 end
 
-function PlaceEdges(JigsawWithCorners,TilePatterns,TileEdges,JigsawEdges,JigsawSize)
-    XIndices = [1:10,10,(JigsawSize-9):JigsawSize,JigsawSize-9];
-    YIndices = [10,1:10,10,(JigsawSize-9) : JigsawSize];
+function PlaceCornersAndEdges(EmptyJigsaw,TilePatterns,TileEdges,BitMask,JigsawCorners,JigsawEdges)
+    JigsawBoundary = deepcopy(EmptyJigsaw);
+    CornerBits = [1;1;0;0];
+    TempMatrix = TileToMatrix(TilePatterns[:,JigsawCorners[1]]);
+    if (sum(circshift(BitMask[1:4,1],-2).==CornerBits) == 4);
+        TempMatrix = rot180(TempMatrix);
+    elseif (sum(circshift(BitMask[1:4,1],-1).==CornerBits) == 4)
+        TempMatrix = rotr90(TempMatrix);
+    elseif (sum(circshift(BitMask[1:4,1],1).==CornerBits) == 4)
+        TempMatrix = rotl90(TempMatrix);
+    end
+    JigsawBoundary[1:10,1:10] = TempMatrix;
+    JigsawEdges = [JigsawCorners[2:end];JigsawEdges]; 
+    
     TileCount = 1;
     EdgeTemp = deepcopy(TileEdges);
+    MatchingTileIndex = 0;
     for n in 1:4
-        while (TileCount <= 10)
+        while (TileCount <= 11)
             XIndices = 1:10;
             YIndices = TileCount*10;
-            TileLeft = join(JigsawWithCorners[XIndices,YIndices]);
+            TileLeft = join(JigsawBoundary[XIndices,YIndices]);
             BitMask = map(x->x==TileLeft,EdgeTemp[:,JigsawEdges]);
-            MatchingTileIndex = findall(y->y==1,BitMask)[1][2];
+            try
+                MatchingTileIndex = findall(y->y==1,BitMask)[1][2];
+            catch
+                return JigsawBoundary;
+            end
+
             MatchingTile = TileToMatrix(TilePatterns[:,JigsawEdges[MatchingTileIndex]]);
             MatchingTile = ReorientEdgeTile(MatchingTile,TileLeft);
-            JigsawWithCorners[XIndices,YIndices+1:YIndices+10] = MatchingTile;
+            JigsawBoundary[XIndices,YIndices+1:YIndices+10] = MatchingTile;
             EdgeTemp[:,JigsawEdges[MatchingTileIndex]] .= "";
             TileCount+=1;
         end
         TileCount = 1;
-        JigsawWithCorners = rotr90(JigsawWithCorners);
-        if n==2
-            JigsawWithCorners = reverse(JigsawWithCorners,dims=1);
-            JigsawWithCorners = rotr90(JigsawWithCorners);
-        end
+        JigsawBoundary = rotl90(JigsawBoundary);
     end
-    return JigsawWithCorners
 end
 
 function ReorientInnerTile(TileFlexible,TileLeft,TileAbove)
@@ -143,9 +136,7 @@ function JoinJigsaw(TilePatterns,BitMask,JigsawCorners,JigsawEdges)
     JigsawSize = PieceCount * CharCount;
     EmptyJigsaw = Matrix{String}(undef,JigsawSize,JigsawSize);
     EmptyJigsaw .= "";
-    JigsawWithCorners = PlaceCorners(EmptyJigsaw,TilePatterns,BitMask,JigsawCorners,JigsawSize);
-    JigsawWithEdges = PlaceEdges(JigsawWithCorners,TilePatterns,TileEdges,JigsawEdges,JigsawSize);
-
+    JigsawBoundary = PlaceCornersAndEdges(EmptyJigsaw,TilePatterns,TileEdges,BitMask,JigsawCorners,JigsawEdges);
     MatchingTileIndex = 1;
     for i in 2:PieceCount-1
         for j in 2:PieceCount-1
@@ -153,17 +144,17 @@ function JoinJigsaw(TilePatterns,BitMask,JigsawCorners,JigsawEdges)
             YIndicesLeft = (j-1)*CharCount;
             XIndicesAbove = (i-1)*CharCount;
             YIndicesAbove = (j-1)*CharCount+1 : CharCount*j;
-            TileLeft = join(JigsawWithEdges[XIndicesLeft,YIndicesLeft]);
-            TileAbove = join(JigsawWithEdges[XIndicesAbove,YIndicesAbove]);
+            TileLeft = join(JigsawBoundary[XIndicesLeft,YIndicesLeft]);
+            TileAbove = join(JigsawBoundary[XIndicesAbove,YIndicesAbove]);
             BitMask = map(x->x==TileLeft,TileEdges) .| map(x->x==TileAbove,TileEdges);
             MatchingTileIndex = (findall(y->y==2,sum(BitMask,dims=1))[1][2]);
             MatchingTile = TileToMatrix(TilePatterns[:,MatchingTileIndex]);
             MatchingTile = ReorientInnerTile(MatchingTile,TileLeft,TileAbove);
-            JigsawWithEdges[XIndicesLeft,YIndicesAbove] = MatchingTile;
+            JigsawBoundary[XIndicesLeft,YIndicesAbove] = MatchingTile;
             TileEdges[:,MatchingTileIndex] .= "";
         end
     end
-    return JigsawWithEdges;
+    return JigsawBoundary;
 end
 
 function FindSeaMonsters(CompletedJigsaw)
@@ -178,28 +169,23 @@ function FindSeaMonsters(CompletedJigsaw)
     SeaMonsterCount = 0;
     TileOrientationCount = 0;
     while SeaMonsterCount == 0
-        for i in 1:94
-            for j in 1:77
-                Pattern = CompletedJigsaw[i:i+2,j:j+19]
+        for i in 1:size(CompletedJigsaw,1)-size(SeaMonsterPattern,1)+1
+            for j in 1:size(CompletedJigsaw,2)-size(SeaMonsterPattern,2)+1
+                Pattern = deepcopy(CompletedJigsaw[i:i+2,j:j+19])
                 HashMatch =  Pattern .== SeaMonsterPattern;
-                
                 if (sum(HashMatch) == HashCount)
-                    println(i);
-                    println(j);
-                    return Pattern,SeaMonsterPattern
-                    println(TileOrientationCount)
                     SeaMonsterCount+=1;
                 end
             end
         end
-        CompletedJigsaw = rotr90(CompletedJigsaw);
+        CompletedJigsaw = rotl90(CompletedJigsaw);
         TileOrientationCount+=1;
         if (TileOrientationCount==4)
-            CompletedJigsaw = reverse(CompletedJigsaw,dims=2);
+            CompletedJigsaw = reverse(CompletedJigsaw,dims=1);
         end
     end
-
-    return SeaMonsterCount,CompletedJigsaw;
+    
+    return SeaMonsterCount,sum(CompletedJigsaw.== "#")-SeaMonsterCount*HashCount;
 end
 
 function RemoveBorders(CompletedJigsaw)
@@ -212,7 +198,11 @@ TilePatterns, TileNumbers = GetTilePatternsAndNumbers(TileData);
 TileEdges = GetIndividualTileEdges(TilePatterns);
 JigsawCorners,BitMask = FindJigsawCorners(TileEdges);
 JigsawEdges = FindJigsawEdges(TileEdges);
+
+println("Solution for Part 1 is : ",prod(TileNumbers[JigsawCorners]));
+
 CompletedJigsaw = JoinJigsaw(TilePatterns,BitMask,JigsawCorners,JigsawEdges);
 CompletedJigsawWithoutBorders = RemoveBorders(CompletedJigsaw);
 
-SeaMonsterCount,RotJig = FindSeaMonsters(CompletedJigsawWithoutBorders)
+SeaMonsterCount,sol2 = FindSeaMonsters(CompletedJigsawWithoutBorders);
+println("Habitat's water roughness is : ",sol2);
