@@ -38,7 +38,6 @@ function FindValidTickets(nearby_tickets,ticket_bounds)
         catch
         end
     end
-    println(size(invalid_ticket_ids))
     valid_tickets = valid_tickets[setdiff(1:end,invalid_ticket_ids),:];
     return ticket_error_rate,valid_tickets;
 end
