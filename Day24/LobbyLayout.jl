@@ -23,7 +23,7 @@ function MoveInGrid(loc,dir,prev_dir)
 end
 
 function FlipTiles(input)
-    TileDict = Dict{Any,Bool}()
+    TileDict = Dict{Vector,Bool}()
     for i in 1:length(input)
         Loc = [0,0]
         Loc = MoveInGrid(Loc,input[i][1],'0')
